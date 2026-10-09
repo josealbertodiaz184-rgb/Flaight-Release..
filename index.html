@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Planning & Computer Flight Plan (CFP)</title>
+    <style>
+        :root {
+            --primary: #0a0e17;
+            --secondary: #1e293b;
+            --accent: #3b82f6;
+            --bg: #030712;
+            --card-bg: #111827;
+            --text: #f3f4f6;
+            --border: #374151;
+            --highlight: #60a5fa;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --gold: #f59e0b;
+            --gold-bright: #fbbf24;
+        }
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 10px;
+        }
+        .container {
+            max-width: 1550px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+            border: 1px solid var(--border);
+        }
+        .header-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+        .brand-logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logo-img {
+            width: 65px;
+            height: 65px;
+            object-fit: contain;
+            border-radius: 4px;
+            border: 1px solid var(--gold);
+            background: #000;
+        }
+        .header-title p { color: #9ca3af; margin: 2px 0 0 0; font-size: 0.75rem; }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: var(--secondary);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .tab-btn.active {
+            background: var(--accent);
+            border-color: var(--highlight);
+            color: #fff;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 15px;
+        }
+        @media(max-width: 1100px) {
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .panel h3 {
+            margin-top: 0;
+            color: var(--highlight);
+            font-size: 0.85rem;
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .form-group { margin-bottom: 8px; }
+        label { display: block; font-size: 0.7rem; color: #9ca3af; margin-bottom: 2px; text-transform: uppercase; }
+        input, select, textarea {
+            width: 100%;
+            padding: 5px;
+            background: #1e293b;
+            color: #4ade80;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            box-sizing: border-box;
+            font-size: 0.8rem;
+            font-family: inherit;
+            font-weight: bold;
+        }
+        textarea { height: 50px; resize: vertical; }
+
+        .btn-action {
+            width: 100%;
+            background: #2563eb;
+            color: white;
+            padding: 8px;
+            border: none;
+            border-radius: 3px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+        .btn-action:hover { background: #1d4ed8; }
+        .btn-success { background: #16a34a; }
+        .btn-success:hover { background: #15803d; }
+
+        .cfp-output {
+            background: #000;
+            color: #00ff66;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            line-height: 1.35;
+            white-space: pre-wrap;
+            border: 1px solid var(--border);
+            height: 550px;
+            overflow-y: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            margin-top: 5px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid var(--border);
+            padding: 6px;
+            text-align: left;
+        }
+        .data-table th { background: #1e3a8a; color: #fff; }
+        .data-table tr:nth-child(even) { background: #0f172a; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-title">
+        <div class="brand-logo-container">
+            <img src="051c90c1-5ba3-4865-9540-3d17b46446ee-1_all_315.png" alt="Logo JD" class="logo-img" id="user_logo_preview" onerror="this.style.display='none'">
+            <div>
+                <p style="color: var(--gold-bright); font-size: 0.95rem; font-weight: bold; letter-spacing: 1px; margin: 0;">FLIGHT DISPATCHER • PLANIFICACIÓN SEGURA</p>
+                <p>SISTEMA OPERACIONAL DE PLANIFICACIÓN DE VUELO & NAVEGACIÓN</p>
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <span style="color: var(--gold-bright); font-size: 0.8rem;" id="active_ac_label">ACTIVO: B737-200</span><br>
+            <span style="color: #60a5fa; font-size: 0.75rem;" id="utc_clock">UTC: --:--:-- | --/--/----</span>
+        </div>
+    </div>
+
+    <!-- Navegación por pestañas -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event, 'tab_planner')">Planificador CFP</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab_aircraft')">Base de Datos Aeronaves</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab_routes')">Base de Datos Rutas</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab_nuevocalculo')">Cálculo Performance & DB</button>
+    </div>
+
+    <!-- PESTAÑA 1: PLANIFICADOR -->
+    <div id="tab_planner" class="tab-content active">
+        <div class="grid-2">
+            <div class="panel">
+                <h3>Parámetros de Vuelo</h3>
+                <div class="form-group">
+                    <label>SELECCIONAR AERONAVE (DB):</label>
+                    <select id="sel_aircraft" onchange="onAircraftChange()"></select>
+                </div>
+                <div class="form-group">
+                    <label>SELECCIONAR RUTA PREDEFINIDA (DB):</label>
+                    <select id="sel_route" onchange="onRouteSelect()"></select>
+                </div>
+                <div class="form-group">
+                    <label>TIPO DE VUELO:</label>
+                    <select id="jp_flight_type">
+                        <option value="INT">INTERNACIONAL (Contingencia 10%)</option>
+                        <option value="NAC">NACIONAL (Contingencia 18%)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>NÚMERO DE VUELO:</label>
+                    <input type="text" id="jp_flight" value="R7-442">
+                </div>
+                <div class="form-group">
+                    <label>MATRÍCULA:</label>
+                    <input type="text" id="jp_tail" value="YV663T">
+                </div>
+                <div class="form-group">
+                    <label>ORIGEN (ICAO):</label>
+                    <input type="text" id="jp_origin" value="SVMI">
+                </div>
+                <div class="form-group">
+                    <label>DESTINO (ICAO):</label>
+                    <input type="text" id="jp_dest" value="SLVR">
+                </div>
+                <div class="form-group">
+                    <label>RUTA ATS / WAYPOINTS:</label>
+                    <input type="text" id="jp_route" value="SVMI UM454 TNCF_FIR SLVR">
+                </div>
+                <div class="form-group">
+                    <label>NIVEL DE VUELO (FL):</label>
+                    <input type="text" id="jp_fl" value="FL370">
+                </div>
+                <div class="form-group">
+                    <label>PASAJEROS (PAX):</label>
+                    <input type="number" id="jp_pax" value="135">
+                </div>
+                <div class="form-group">
+                    <label>COMBUSTIBLE CARGADO / FOB (<span id="unit_label_fob">LBS</span>):</label>
+                    <input type="number" id="jp_fob" value="11500">
+                </div>
+                <div class="form-group">
+                    <label>ALTERNO:</label>
+                    <input type="text" id="jp_altn" value="SLCB">
+                </div>
+                <div class="form-group">
+                    <label>HOLDING (LBS):</label>
+                    <input type="number" id="jp_holding" value="2000">
+                </div>
+                <div class="form-group">
+                    <label>EXTRA FUEL (LBS):</label>
+                    <input type="number" id="jp_extra" value="500">
+                </div>
+                <button class="btn-action" type="button" onclick="generateJetPlan()">GENERAR CFP OPERACIONAL</button>
+            </div>
+
+            <div class="panel">
+                <h3>Computer Flight Plan (CFP) & Navlog</h3>
+                <div class="cfp-output" id="cfp_terminal">
+=== SISTEMA DE PLANIFICACIÓN INICIALIZADO ===
+Seleccione aeronave y ruta de la base de datos o ingrese parámetros.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PESTAÑA 2: BASE DE DATOS AERONAVES -->
+    <div id="tab_aircraft" class="tab-content">
+        <div class="grid-2">
+            <div class="panel">
+                <h3>Registrar / Editar Aeronave</h3>
+                <form id="acForm" onsubmit="saveAircraft(event)">
+                    <div class="form-group">
+                        <label>Modelo / Identificador:</label>
+                        <input type="text" id="ac_model" placeholder="Ej: B737-200" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Matrícula:</label>
+                        <input type="text" id="ac_tail" placeholder="Ej: YV663T" required>
+                    </div>
+                    <div class="form-group">
+                        <label>DOW (Dry Operating Weight):</label>
+                        <input type="number" id="ac_dow" value="26500" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Unidad de Peso:</label>
+                        <select id="ac_unit" required>
+                            <option value="LBS">Libras (LBS)</option>
+                            <option value="KG">Kilogramos (KG)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>MXZF (Max Zero Fuel Weight):</label>
+                        <input type="number" id="ac_mxzf" value="38500" required>
+                    </div>
+                    <div class="form-group">
+                        <label>MRW (Max Ramp Weight):</label>
+                        <input type="number" id="ac_mrw" value="52500" required>
+                    </div>
+                    <div class="form-group">
+                        <label>MTOW (Max Takeoff Weight):</label>
+                        <input type="number" id="ac_mtow" value="52300" required>
+                    </div>
+                    <div class="form-group">
+                        <label>MLOW (Max Landing Weight):</label>
+                        <input type="number" id="ac_mlow" value="49000" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Consumo Promedio Horario:</label>
+                        <input type="number" id="ac_burn" value="2400" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Velocidad Crucero Típica:</label>
+                        <input type="text" id="ac_speed" value="430 KTAS (M 0.74)" required>
+                    </div>
+                    <button type="submit" class="btn-action btn-success">Guardar Aeronave en DB</button>
+                </form>
+            </div>
+            <div class="panel">
+                <h3>Flota Registrada en el Sistema</h3>
+                <table class="data-table" id="ac_table">
+                    <thead>
+                        <tr>
+                            <th>Modelo</th>
+                            <th>Matrícula</th>
+                            <th>DOW</th>
+                            <th>Unidad</th>
+                            <th>MXZF</th>
+                            <th>MRW</th>
+                            <th>MTOW</th>
+                            <th>MLOW</th>
+                            <th>Consumo/Hr</th>
+                            <th>Velocidad</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PESTAÑA 3: BASE DE DATOS RUTAS -->
+    <div id="tab_routes" class="tab-content">
+        <div class="grid-2">
+            <div class="panel">
+                <h3>Registrar / Editar Ruta</h3>
+                <form id="routeForm" onsubmit="saveRoute(event)">
+                    <div class="form-group">
+                        <label>Nombre de Ruta (Ej: SVMI-SLVR):</label>
+                        <input type="text" id="rt_name" placeholder="SVMI-SLVR" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Origen (ICAO):</label>
+                        <input type="text" id="rt_origin" placeholder="SVMI" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Destino (ICAO):</label>
+                        <input type="text" id="rt_dest" placeholder="SLVR" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Distancia Total (NM):</label>
+                        <input type="number" id="rt_dist" value="1485" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tiempo Estimado (Minutos):</label>
+                        <input type="number" id="rt_time" value="198" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Ruta ATS / Waypoints:</label>
+                        <textarea id="rt_string" required>SVMI UM454 TNCF_FIR SLVR</textarea>
+                    </div>
+                    <button type="submit" class="btn-action btn-success">Guardar Ruta en DB</button>
+                </form>
+            </div>
+            <div class="panel">
+                <h3>Rutas Guardadas en el Sistema</h3>
+                <table class="data-table" id="route_table">
+                    <thead>
+                        <tr>
+                            <th>Ruta</th>
+                            <th>Trayecto</th>
+                            <th>Distancia (NM)</th>
+                            <th>EET</th>
+                            <th>ATS String</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PESTAÑA 4: MÓDULO PERFORMANCE & DB DE PISTAS/FLAPS -->
+    <div id="tab_nuevocalculo" class="tab-content">
+        <div class="grid-2">
+            <div>
+                <!-- Panel de Registro de Performance / Pista -->
+                <div class="panel">
+                    <h3>Alimentar DB: Configuración de Pista & Flaps</h3>
+                    <form id="perfDbForm" onsubmit="savePerfConfig(event)">
+                        <div class="form-group">
+                            <label>Aeropuerto / Pista (Ej: SVMI 09-27):</label>
+                            <input type="text" id="pdb_airport" placeholder="SVMI 09" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Longitud de Pista Manual (FT):</label>
+                            <input type="number" id="pdb_length_manual" value="9840" placeholder="Ej: 9840" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Condición de Pista:</label>
+                            <select id="pdb_condition">
+                                <option value="DRY">SECA (DRY)</option>
+                                <option value="WET">MOJADA (WET)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Flaps Permitidos (Ej: 1, 5, 15, 25):</label>
+                            <input type="text" id="pdb_flaps_allowed" value="1, 5, 15" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Flap Óptimo Recomendado:</label>
+                            <select id="pdb_optimal_flap">
+                                <option value="1">FLAPS 1 (Optimizado Pista Larga / Gradiente)</option>
+                                <option value="5">FLAPS 5 (Estándar / Salida Normal)</option>
+                                <option value="15">FLAPS 15 (Óptimo Pista Corta / Limitada)</option>
+                                <option value="25">FLAPS 25 (Máximo Rendimiento Ascenso OEI)</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-action btn-success">Guardar Configuración en DB</button>
+                    </form>
+                </div>
+
+                <!-- Panel de Cálculo de V-Speeds -->
+                <div class="panel">
+                    <h3>Cálculo de V-Speeds Operacional</h3>
+                    <div class="form-group">
+                        <label>SELECCIONAR CONFIGURACIÓN DE PISTA (DB):</label>
+                        <select id="sel_perf_config" onchange="onPerfConfigSelect()"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>PESO DE DESPEGUE (TOW):</label>
+                        <input type="number" id="nc_tow" value="48000">
+                    </div>
+                    <div class="form-group">
+                        <label>FLAP SELECCIONADO PARA EL CÁLCULO:</label>
+                        <select id="nc_selected_flap">
+                            <option value="1">FLAPS 1</option>
+                            <option value="5" selected>FLAPS 5</option>
+                            <option value="15">FLAPS 15</option>
+                            <option value="25">FLAPS 25</option>
+                        </select>
+                    </div>
+                    <button class="btn-action" type="button" onclick="calcularPerformance()">EJECUTAR CÁLCULO DE V-SPEEDS</button>
+                </div>
+            </div>
+
+            <div>
+                <div class="panel">
+                    <h3>Base de Datos de Configuraciones de Pista & Flaps</h3>
+                    <table class="data-table" id="perf_db_table">
+                        <thead>
+                            <tr>
+                                <th>Pista</th>
+           
